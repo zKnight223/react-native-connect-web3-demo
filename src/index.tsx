@@ -5,16 +5,12 @@ import {
   Text,
   TextInput,
   LogBox,
+  AppState,
 } from "react-native"
 import { useWalletConnect } from "@walletconnect/react-native-dapp"
 import Picker from "react-native-dropdown-picker"
 import { Toast, ALERT_TYPE } from "react-native-alert-notification"
-
 const Web3 = require("web3")
-LogBox.ignoreLogs([
-  "Warning: The provided value 'ms-stream' is not a valid 'responseType'.",
-  "Warning: The provided value 'moz-chunked-arraybuffer' is not a valid 'responseType'.",
-])
 
 function Label(props: { children: any }) {
   return <Text style={styles.label}>{props.children}</Text>
@@ -27,13 +23,52 @@ function SubmitButton(props: { txInfo: any }) {
     return connector.connect({ chainId: 57 })
   }, [connector])
 
+  const appState = React.useRef(AppState.currentState)
+  const [appStateVisible, setAppStateVisible] = React.useState(appState.current)
+
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        console.log("App has come to the foreground!")
+      }
+
+      appState.current = nextAppState
+      setAppStateVisible(appState.current)
+      console.log("AppState", appState.current)
+    })
+
+    return () => {
+      console.log("Exit")
+      subscription.remove()
+    }
+  }, [])
+
   const submitTransaction = React.useCallback(() => {
     if (connector.chainId === 1 && props.txInfo.currency === "eth") {
+      connector.on("chainChanged", () => {
+        Toast.show({
+          type: ALERT_TYPE.SUCCESS,
+          title: "Success",
+          textBody: "Confirmed",
+          autoClose: 5000,
+        })
+      })
       connector
         .sendTransaction({
           from: connector.accounts[0],
           to: props.txInfo.address,
           value: Web3.utils.toWei(Web3.utils.toBN(props.txInfo.amount)),
+        })
+        .then(() => {
+          Toast.show({
+            type: ALERT_TYPE.SUCCESS,
+            title: "Success",
+            textBody: "Confirmed",
+            autoClose: 5000,
+          })
         })
         .catch((reason) => {
           Toast.show({
@@ -52,6 +87,14 @@ function SubmitButton(props: { txInfo: any }) {
           from: connector.accounts[0],
           to: props.txInfo.address,
           value: Web3.utils.toWei(Web3.utils.toBN(props.txInfo.amount)),
+        })
+        .then(() => {
+          Toast.show({
+            type: ALERT_TYPE.SUCCESS,
+            title: "Success",
+            textBody: "Confirmed",
+            autoClose: 5000,
+          })
         })
         .catch((reason) => {
           Toast.show({
