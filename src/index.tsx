@@ -1,20 +1,68 @@
 import * as React from "react"
-import { StyleSheet, TouchableOpacity, Text, TextInput } from "react-native"
+import {
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  TextInput,
+  LogBox,
+} from "react-native"
 import { useWalletConnect } from "@walletconnect/react-native-dapp"
 import Picker from "react-native-dropdown-picker"
+import { Toast, ALERT_TYPE } from "react-native-alert-notification"
+
+const Web3 = require("web3")
+LogBox.ignoreLogs([
+  "Warning: The provided value 'ms-stream' is not a valid 'responseType'.",
+  "Warning: The provided value 'moz-chunked-arraybuffer' is not a valid 'responseType'.",
+])
 
 function Label(props: { children: any }) {
   return <Text style={styles.label}>{props.children}</Text>
 }
 
-function SubmitButton(props: { txInfo: Object }) {
+function SubmitButton(props: { txInfo: any }) {
   const connector = useWalletConnect()
 
   const connectWallet = React.useCallback(() => {
     return connector.connect({ chainId: 57 })
   }, [connector])
 
-  const submitTransaction = React.useCallback(() => {}, [props.txInfo])
+  const submitTransaction = React.useCallback(() => {
+    if (connector.chainId === 1 && props.txInfo.currency === "eth") {
+      connector
+        .sendTransaction({
+          from: connector.accounts[0],
+          to: props.txInfo.address,
+          value: Web3.utils.toWei(Web3.utils.toBN(props.txInfo.amount)),
+        })
+        .catch((reason) => {
+          Toast.show({
+            type: ALERT_TYPE.DANGER,
+            title: "Error",
+            textBody: String(reason),
+            autoClose: 5000,
+          })
+        })
+    } else if (
+      Number(connector.chainId) === 56 &&
+      props.txInfo.currency === "bnb"
+    ) {
+      connector
+        .sendTransaction({
+          from: connector.accounts[0],
+          to: props.txInfo.address,
+          value: Web3.utils.toWei(Web3.utils.toBN(props.txInfo.amount)),
+        })
+        .catch((reason) => {
+          Toast.show({
+            type: ALERT_TYPE.DANGER,
+            title: "Error",
+            textBody: String(reason),
+            autoClose: 5000,
+          })
+        })
+    }
+  }, [props.txInfo])
 
   return (
     <>
@@ -37,9 +85,9 @@ export default function Layout() {
   const [open, setOpen] = React.useState<boolean>(false)
   const [currency, setValue] = React.useState(null)
   const [items, setItems] = React.useState([
-    { label: "BNB", value: "apple" },
-    { label: "BUSD", value: "banana" },
-    { label: "ETH", value: "s" },
+    { label: "BNB", value: "bnb" },
+    { label: "BUSD", value: "busd" },
+    { label: "ETH", value: "eth" },
   ])
 
   return (

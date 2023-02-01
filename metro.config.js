@@ -1,5 +1,5 @@
 module.exports = {
   resolver: {
-    extraNodeModules: require("expo-crypto-polyfills"),
+    extraNodeModules: require("node-libs-browser"),
   },
 }
